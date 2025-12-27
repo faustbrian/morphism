@@ -85,8 +85,8 @@ $comments = Comment::where('commentable_type', Post::class)->get();
 
 ## Next Steps
 
-- [Basic Usage](/morphism/basic-usage/) - Working with morphs
-- [Config-Based Setup](/morphism/config-based-setup/) - Configuration options
-- [Strict Enforcement](/morphism/strict-enforcement/) - Type safety
-- [Migrations](/morphism/migrations/) - Database setup
-- [Testing](/morphism/testing/) - Testing with Morpheus
+- [Basic Usage](./basic-usage.md) - Working with morphs
+- [Config-Based Setup](./config-based-setup.md) - Configuration options
+- [Strict Enforcement](./strict-enforcement.md) - Type safety
+- [Migrations](./migrations.md) - Database setup
+- [Testing](./testing.md) - Testing with Morpheus
