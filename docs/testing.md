@@ -1,8 +1,3 @@
----
-title: Testing with Morpheus
-description: Testing polymorphic relationships with the Morpheus helper.
----
-
 Testing polymorphic relationships with the Morpheus helper.
 
 ## Basic Testing

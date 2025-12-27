@@ -1,8 +1,3 @@
----
-title: Strict Enforcement
-description: Type-safe polymorphic relationships with strict mode.
----
-
 Type-safe polymorphic relationships with strict mode.
 
 ## Enabling Strict Mode

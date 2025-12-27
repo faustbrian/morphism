@@ -1,8 +1,3 @@
----
-title: Migrations
-description: Database migrations for polymorphic relationships.
----
-
 Database migrations for polymorphic relationships.
 
 ## Basic Migration

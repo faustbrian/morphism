@@ -1,8 +1,3 @@
----
-title: Getting Started
-description: Install and start using Morphism for polymorphic relations in Laravel.
----
-
 Morphism provides enhanced polymorphic relationship management for Laravel with strict type enforcement, automatic morphing, and cleaner configuration.
 
 ## Installation

@@ -1,8 +1,3 @@
----
-title: Config-Based Setup
-description: Configure polymorphic relationships centrally.
----
-
 Configure polymorphic relationships centrally.
 
 ## Configuration File

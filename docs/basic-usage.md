@@ -1,8 +1,3 @@
----
-title: Basic Usage
-description: Working with polymorphic relationships using Morphism.
----
-
 Working with polymorphic relationships using Morphism.
 
 ## Defining Morphs
