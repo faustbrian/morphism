@@ -9,6 +9,9 @@
 
 namespace Cline\Morphism\Exceptions;
 
+use Facade\IgnitionContracts\BaseSolution;
+use Facade\IgnitionContracts\ProvidesSolution;
+use Facade\IgnitionContracts\Solution;
 use InvalidArgumentException;
 
 /**
@@ -19,7 +22,7 @@ use InvalidArgumentException;
  *
  * @author Brian Faust <brian@cline.sh>
  */
-final class InvalidConfigurationException extends InvalidArgumentException
+final class InvalidConfigurationException extends InvalidArgumentException implements ProvidesSolution
 {
     /**
      * Creates exception for simultaneous morphKeyMap and enforceMorphKeyMap configuration.
@@ -37,5 +40,17 @@ final class InvalidConfigurationException extends InvalidArgumentException
             'Cannot configure both "morphKeyMap" and "enforceMorphKeyMap" simultaneously. '.
             'Choose one: use "morphKeyMap" for optional mapping or "enforceMorphKeyMap" for strict enforcement.',
         );
+    }
+
+    public function getSolution(): Solution
+    {
+        /** @var BaseSolution $solution */
+        $solution = BaseSolution::create('Review package usage and configuration.');
+
+        return $solution
+            ->setSolutionDescription('Exception: '.$this->getMessage())
+            ->setDocumentationLinks([
+                'Package documentation' => 'https://github.com/cline/morphism',
+            ]);
     }
 }
