@@ -1,17 +1,17 @@
 ## Table of Contents
 
-1. [Migrations](#doc-cookbooks-migrations) (`cookbooks/migrations.php`)
-2. [Basic Usage](#doc-cookbooks-basic-usage) (`cookbooks/basic-usage.php`)
-3. [Strict Enforcement](#doc-cookbooks-strict-enforcement) (`cookbooks/strict-enforcement.php`)
-4. [Config-Based Setup](#doc-cookbooks-config-based-setup) (`cookbooks/config-based-setup.php`)
-5. [Package Integration](#doc-cookbooks-package-integration) (`cookbooks/package-integration.php`)
-6. [Testing With Morpheus](#doc-cookbooks-testing-with-morpheus) (`cookbooks/testing-with-morpheus.php`)
-7. [Overview](#doc-docs-readme) (`docs/README.md`)
-8. [Basic Usage](#doc-docs-basic-usage) (`docs/basic-usage.md`)
-9. [Config Based Setup](#doc-docs-config-based-setup) (`docs/config-based-setup.md`)
-10. [Migrations](#doc-docs-migrations) (`docs/migrations.md`)
-11. [Strict Enforcement](#doc-docs-strict-enforcement) (`docs/strict-enforcement.md`)
-12. [Testing](#doc-docs-testing) (`docs/testing.md`)
+1. [Migrations](#doc-cookbooks-migrations)
+2. [Basic Usage](#doc-cookbooks-basic-usage)
+3. [Strict Enforcement](#doc-cookbooks-strict-enforcement)
+4. [Config-Based Setup](#doc-cookbooks-config-based-setup)
+5. [Package Integration](#doc-cookbooks-package-integration)
+6. [Testing With Morpheus](#doc-cookbooks-testing-with-morpheus)
+7. [Overview](#doc-docs-readme)
+8. [Basic Usage](#doc-docs-basic-usage)
+9. [Config Based Setup](#doc-docs-config-based-setup)
+10. [Migrations](#doc-docs-migrations)
+11. [Strict Enforcement](#doc-docs-strict-enforcement)
+12. [Testing](#doc-docs-testing)
 <a id="doc-cookbooks-migrations"></a>
 
 ```php
