@@ -1,11 +1,488 @@
 ## Table of Contents
 
-1. Overview (`docs/README.md`)
-2. Basic Usage (`docs/basic-usage.md`)
-3. Config Based Setup (`docs/config-based-setup.md`)
-4. Migrations (`docs/migrations.md`)
-5. Strict Enforcement (`docs/strict-enforcement.md`)
-6. Testing (`docs/testing.md`)
+1. [Migrations](#doc-cookbooks-migrations) (`cookbooks/migrations.php`)
+2. [Basic Usage](#doc-cookbooks-basic-usage) (`cookbooks/basic-usage.php`)
+3. [Strict Enforcement](#doc-cookbooks-strict-enforcement) (`cookbooks/strict-enforcement.php`)
+4. [Config-Based Setup](#doc-cookbooks-config-based-setup) (`cookbooks/config-based-setup.php`)
+5. [Package Integration](#doc-cookbooks-package-integration) (`cookbooks/package-integration.php`)
+6. [Testing With Morpheus](#doc-cookbooks-testing-with-morpheus) (`cookbooks/testing-with-morpheus.php`)
+7. [Overview](#doc-docs-readme) (`docs/README.md`)
+8. [Basic Usage](#doc-docs-basic-usage) (`docs/basic-usage.md`)
+9. [Config Based Setup](#doc-docs-config-based-setup) (`docs/config-based-setup.md`)
+10. [Migrations](#doc-docs-migrations) (`docs/migrations.md`)
+11. [Strict Enforcement](#doc-docs-strict-enforcement) (`docs/strict-enforcement.md`)
+12. [Testing](#doc-docs-testing) (`docs/testing.md`)
+<a id="doc-cookbooks-migrations"></a>
+
+```php
+<?php declare(strict_types=1);
+
+/**
+ * Copyright (C) Brian Faust
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+use Cline\Morphism\Enums\MorphType;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+/**
+ * Example migration using morphism() macro.
+ *
+ * The macro automatically uses the configured default morph type
+ * from config/morphism.php (defaults to ULID).
+ */
+return new class() extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('comments', function (Blueprint $table): void {
+            $table->ulid('id')->primary();
+            $table->text('body');
+
+            // Creates commentable_type (string) and commentable_id (ulid by default)
+            $table->morphism('commentable');
+
+            $table->timestamps();
+        });
+
+        Schema::create('tags', function (Blueprint $table): void {
+            $table->ulid('id')->primary();
+            $table->string('name');
+
+            // Creates taggable_type and taggable_id columns
+            // Uses default morph type from config
+            $table->morphism('taggable');
+
+            $table->timestamps();
+        });
+
+        Schema::create('activity_log', function (Blueprint $table): void {
+            $table->ulid('id')->primary();
+            $table->string('event');
+
+            // Creates subject_type and subject_id (required)
+            $table->morphism('subject');
+
+            // Creates causer_type and causer_id (nullable)
+            $table->nullableMorphism('causer');
+
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('activity_log');
+        Schema::dropIfExists('tags');
+        Schema::dropIfExists('comments');
+    }
+};
+
+/**
+ * Example: Overriding the default morph type per-column.
+ *
+ * You can pass a MorphType enum value to override the default
+ * for specific columns when needed.
+ */
+return new class() extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('legacy_relations', function (Blueprint $table): void {
+            $table->id();
+
+            // Force numeric morphs for legacy integer PKs
+            $table->morphism('legacy_model', MorphType::Numeric);
+
+            // Force UUID morphs for external system
+            $table->nullableMorphism('external_ref', MorphType::UUID);
+
+            // Use default (ULID) for new models
+            $table->morphism('new_model');
+
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('legacy_relations');
+    }
+};
+
+/**
+ * Example: Available MorphType options.
+ */
+
+// MorphType::ULID - Creates ulid column (26 chars, sortable, default)
+// $table->morphism('subject', MorphType::ULID);
+
+// MorphType::UUID - Creates uuid column (36 chars)
+// $table->morphism('subject', MorphType::UUID);
+
+// MorphType::Numeric - Creates unsignedBigInteger (for auto-increment PKs)
+// $table->morphism('subject', MorphType::Numeric);
+
+// MorphType::String - Creates string column (flexible, any key type)
+// $table->morphism('subject', MorphType::String);
+
+/**
+ * Before Morphism (verbose):
+ */
+// match ($boundaryMorphType) {
+//     MorphType::ULID => $table->nullableUlidMorphs('boundary'),
+//     MorphType::UUID => $table->nullableUuidMorphs('boundary'),
+//     MorphType::Numeric => $table->nullableNumericMorphs('boundary'),
+//     MorphType::String => $table->nullableMorphs('boundary'),
+// };
+
+/**
+ * After Morphism (clean):
+ */
+// $table->nullableMorphism('boundary');
+// or with explicit type:
+// $table->nullableMorphism('boundary', MorphType::UUID);
+```
+
+<a id="doc-cookbooks-basic-usage"></a>
+
+```php
+<?php declare(strict_types=1);
+
+/**
+ * Copyright (C) Brian Faust
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+use App\Models\Organization;
+use App\Models\User;
+use Cline\Morphism\MorphKeyRegistry;
+
+// Get the registry from the container (it's a singleton)
+$registry = app(MorphKeyRegistry::class);
+
+// Register key mappings for your models
+$registry->map([
+    User::class => 'uuid',           // User model uses 'uuid' as primary key
+    Organization::class => 'ulid',   // Organization uses 'ulid'
+]);
+
+// Get the key column name for a model
+$user = User::find('550e8400-e29b-41d4-a716-446655440000');
+$keyColumn = $registry->getKey($user);  // Returns 'uuid'
+
+// Get the actual key value
+$keyValue = $registry->getValue($user);  // Returns '550e8400-e29b-41d4-a716-446655440000'
+
+// Check if a model has a registered mapping
+if ($registry->has(User::class)) {
+    // Model has explicit key mapping
+}
+
+// Get key from class string (without instantiating)
+$keyColumn = $registry->getKeyFromClass(Organization::class);  // Returns 'ulid'
+
+// Get all registered mappings
+$allMappings = $registry->all();
+// Returns: [User::class => 'uuid', Organization::class => 'ulid']
+```
+
+<a id="doc-cookbooks-strict-enforcement"></a>
+
+```php
+<?php declare(strict_types=1);
+
+/**
+ * Copyright (C) Brian Faust
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+use App\Models\Comment;
+use App\Models\Organization;
+use App\Models\Post;
+use App\Models\User;
+use Cline\Morphism\Exceptions\MorphKeyViolationException;
+use Cline\Morphism\MorphKeyRegistry;
+
+$registry = app(MorphKeyRegistry::class);
+
+// Use enforce() to register mappings AND enable strict mode
+$registry->enforce([
+    User::class => 'uuid',
+    Organization::class => 'ulid',
+    Post::class => 'id',
+]);
+
+// These work fine - models are mapped
+$registry->getKey(
+    new User()
+);          // Returns 'uuid'
+$registry->getKey(
+    new Organization()
+);  // Returns 'ulid'
+$registry->getKey(
+    new Post()
+);          // Returns 'id'
+
+// This throws MorphKeyViolationException - Comment is not mapped!
+try {
+    $registry->getKey(
+        new Comment()
+    );
+} catch (MorphKeyViolationException $e) {
+    // "Model [App\Models\Comment] is not mapped in the morph key registry..."
+    Log::error('Unmapped model used in polymorphic relationship', [
+        'model' => Comment::class,
+        'error' => $e->getMessage(),
+    ]);
+}
+
+// Check if enforcement is active
+if ($registry->isEnforcing()) {
+    // Strict mode is enabled
+}
+
+// Alternative: Enable enforcement separately from mapping
+$registry->map([User::class => 'uuid']);
+$registry->requireMapping();  // Now enforcement is enabled
+```
+
+<a id="doc-cookbooks-config-based-setup"></a>
+
+```php
+<?php declare(strict_types=1);
+
+/**
+ * Copyright (C) Brian Faust
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+use App\Models\Organization;
+use App\Models\Team;
+use App\Models\User;
+
+/**
+ * Cookbook: Configuration-Based Setup
+ *
+ * This cookbook demonstrates how to configure morph key mappings
+ * via Laravel's configuration system instead of programmatically.
+ */
+
+// In config/morphism.php (publish with: php artisan vendor:publish --tag=morphism-config)
+return [
+    // Option 1: Non-enforced mappings (unmapped models use their default key)
+    'morphKeyMap' => [
+        User::class => 'uuid',
+        Organization::class => 'ulid',
+        Team::class => 'id',
+    ],
+    // Option 2: Enforced mappings (unmapped models throw exception)
+    // Note: Only use ONE of these options, not both!
+    'enforceMorphKeyMap' => [
+        // App\Models\User::class => 'uuid',
+        // App\Models\Organization::class => 'ulid',
+    ],
+];
+
+// The MorphismServiceProvider automatically reads this config on boot.
+// No additional code needed - just publish and configure!
+```
+
+<a id="doc-cookbooks-package-integration"></a>
+
+```php
+<?php declare(strict_types=1);
+
+/**
+ * Copyright (C) Brian Faust
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+namespace YourPackage;
+
+use Cline\Morphism\Concerns\ConfiguresMorphism;
+use Cline\Morphism\MorphKeyRegistry;
+use Illuminate\Support\ServiceProvider;
+
+use function now;
+
+/**
+ * Example: Your package's service provider
+ *
+ * @author Brian Faust <brian@cline.sh>
+ */
+final class YourPackageServiceProvider extends ServiceProvider
+{
+    // Include the trait for config-based morph key setup
+    use ConfiguresMorphism;
+
+    public function register(): void
+    {
+        $this->mergeConfigFrom(__DIR__.'/../config/your-package.php', 'your-package');
+    }
+
+    public function boot(): void
+    {
+        // This reads 'your-package.morphKeyMap' and 'your-package.enforceMorphKeyMap'
+        // from your package's config file and applies them to the shared registry
+        $this->configureMorphism('your-package');
+    }
+}
+
+/**
+ * Example: Using the registry in your package's service class
+ *
+ * @author Brian Faust <brian@cline.sh>
+ */
+final class YourService
+{
+    public function __construct(
+        private readonly MorphKeyRegistry $registry,
+    ) {}
+
+    public function storePolymorphicRelation(Model $model): void
+    {
+        // Get the correct key column for this model type
+        $keyColumn = $this->registry->getKey($model);
+        $keyValue = $this->registry->getValue($model);
+
+        // Store in your pivot table
+        DB::table('your_polymorphic_table')->insert([
+            'related_type' => $model->getMorphClass(),
+            'related_id' => $keyValue,  // Uses the correct key (uuid, ulid, or id)
+            'created_at' => now(),
+        ]);
+    }
+
+    public function resolvePolymorphicRelation(string $type, string|int $id): ?Model
+    {
+        // Get the key column for this model type
+        $keyColumn = $this->registry->getKeyFromClass($type);
+
+        // Query using the correct key column
+        return $type::where($keyColumn, $id)->first();
+    }
+}
+
+/**
+ * Example: Your package's config file (config/your-package.php)
+ */
+return [
+    // ... other config options ...
+
+    'morphKeyMap' => [
+        // Users can configure their model key mappings here
+        // App\Models\User::class => 'uuid',
+    ],
+    'enforceMorphKeyMap' => [
+        // Or use enforced mappings for strict mode
+        // App\Models\User::class => 'uuid',
+    ],
+];
+```
+
+<a id="doc-cookbooks-testing-with-morpheus"></a>
+
+```php
+<?php declare(strict_types=1);
+
+/**
+ * Copyright (C) Brian Faust
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+use Cline\Morphism\Exceptions\MorphKeyViolationException;
+use Cline\Morphism\MorphKeyRegistry;
+use Tests\Fixtures\UserModel;
+
+// In your TestCase base class:
+/**
+ * @internal
+ *
+ * @author Brian Faust <brian@cline.sh>
+ */
+abstract class TestCase extends Orchestra\Testbench\TestCase
+{
+    protected function tearDown(): void
+    {
+        // Always reset the registry between tests to avoid state leakage
+        $this->app?->make(MorphKeyRegistry::class)->reset();
+
+        parent::tearDown();
+    }
+}
+
+// Example Pest tests:
+describe('YourService', function (): void {
+    beforeEach(function (): void {
+        // Set up mappings for your tests
+        $this->registry = app(MorphKeyRegistry::class);
+        $this->registry->map([
+            UserModel::class => 'uuid',
+        ]);
+    });
+
+    test('stores polymorphic relation with correct key', function (): void {
+        $user = new UserModel();
+        $user->uuid = 'test-uuid-123';
+
+        $service = app(YourService::class);
+        $service->storePolymorphicRelation($user);
+
+        expect(DB::table('your_table')->where('related_id', 'test-uuid-123')->exists())
+            ->toBeTrue();
+    });
+
+    test('throws exception for unmapped model in strict mode', function (): void {
+        $this->registry->enforce([UserModel::class => 'uuid']);
+
+        $unmappedModel = new UnmappedModel();
+
+        expect(fn () => $this->registry->getKey($unmappedModel))
+            ->toThrow(MorphKeyViolationException::class);
+    });
+
+    test('uses default key when not mapped and not enforcing', function (): void {
+        // Registry has no mapping for this model
+        $model = new ModelWithCustomKey();  // Has $primaryKey = 'custom_id'
+
+        expect($this->registry->getKey($model))->toBe('custom_id');
+    });
+});
+
+// Testing configuration integration:
+describe('Configuration', function (): void {
+    test('applies morphKeyMap from config', function (): void {
+        config(['your-package.morphKeyMap' => [
+            UserModel::class => 'custom_key',
+        ]]);
+
+        // Re-register provider to apply config
+        $this->app->register(YourPackageServiceProvider::class, force: true);
+
+        $registry = app(MorphKeyRegistry::class);
+
+        expect($registry->getKeyFromClass(UserModel::class))->toBe('custom_key');
+    });
+});
+```
+
+<a id="doc-docs-readme"></a>
+
 Morphism provides enhanced polymorphic relationship management for Laravel with strict type enforcement, automatic morphing, and cleaner configuration.
 
 ## Installation
@@ -88,11 +565,13 @@ $comments = Comment::where('commentable_type', Post::class)->get();
 
 ## Next Steps
 
-- [Basic Usage](./basic-usage.md) - Working with morphs
-- [Config-Based Setup](./config-based-setup.md) - Configuration options
-- [Strict Enforcement](./strict-enforcement.md) - Type safety
-- [Migrations](./migrations.md) - Database setup
-- [Testing](./testing.md) - Testing with Morpheus
+- [Basic Usage](#doc-docs-basic-usage) - Working with morphs
+- [Config-Based Setup](#doc-docs-config-based-setup) - Configuration options
+- [Strict Enforcement](#doc-docs-strict-enforcement) - Type safety
+- [Migrations](#doc-docs-migrations) - Database setup
+- [Testing](#doc-docs-testing) - Testing with Morpheus
+
+<a id="doc-docs-basic-usage"></a>
 
 Working with polymorphic relationships using Morphism.
 
@@ -242,6 +721,8 @@ $comments = Comment::with([
 ])->get();
 ```
 
+<a id="doc-docs-config-based-setup"></a>
+
 Configure polymorphic relationships centrally.
 
 ## Configuration File
@@ -379,6 +860,8 @@ foreach ($issues as $issue) {
     logger()->warning($issue);
 }
 ```
+
+<a id="doc-docs-migrations"></a>
 
 Database migrations for polymorphic relationships.
 
@@ -525,6 +1008,8 @@ Schema::create('comments', function (Blueprint $table) {
 });
 ```
 
+<a id="doc-docs-strict-enforcement"></a>
+
 Type-safe polymorphic relationships with strict mode.
 
 ## Enabling Strict Mode
@@ -650,6 +1135,8 @@ Morphism::validateUsing('commentable', function ($model, $type) {
     return true;
 });
 ```
+
+<a id="doc-docs-testing"></a>
 
 Testing polymorphic relationships with the Morpheus helper.
 

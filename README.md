@@ -19,12 +19,12 @@ composer require cline/morphism
 
 ## Documentation
 
-- **[Migrations](cookbooks/migrations.php)** - Blueprint macros for polymorphic columns
-- **[Basic Usage](cookbooks/basic-usage.php)** - Core registry operations
-- **[Strict Enforcement](cookbooks/strict-enforcement.php)** - Require all models to be mapped
-- **[Config-Based Setup](cookbooks/config-based-setup.php)** - Configure via config files
-- **[Package Integration](cookbooks/package-integration.php)** - Integrate into your own packages
-- **[Testing](cookbooks/testing-with-morphism.php)** - Testing patterns and best practices
+- **[Migrations](DOCS.md#doc-cookbooks-migrations)** - Blueprint macros for polymorphic columns
+- **[Basic Usage](DOCS.md#doc-cookbooks-basic-usage)** - Core registry operations
+- **[Strict Enforcement](DOCS.md#doc-cookbooks-strict-enforcement)** - Require all models to be mapped
+- **[Config-Based Setup](DOCS.md#doc-cookbooks-config-based-setup)** - Configure via config files
+- **[Package Integration](DOCS.md#doc-cookbooks-package-integration)** - Integrate into your own packages
+- **[Testing](DOCS.md)** - Testing patterns and best practices
 
 ## Change log
 
